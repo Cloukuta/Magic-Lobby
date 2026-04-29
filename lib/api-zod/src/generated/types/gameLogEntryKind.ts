@@ -18,4 +18,5 @@ export const GameLogEntryKind = {
   playerEliminated: "playerEliminated",
   gameStarted: "gameStarted",
   gameReset: "gameReset",
+  roll: "roll",
 } as const;

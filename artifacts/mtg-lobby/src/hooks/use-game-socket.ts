@@ -48,7 +48,8 @@ type ClientAction =
   | { type: "startGame" }
   | { type: "resetGame" }
   | { type: "kickPlayer"; playerId: string }
-  | { type: "setStartingLife"; value: number };
+  | { type: "setStartingLife"; value: number }
+  | { type: "roll"; kind: "coin" | "d6" | "d20" };
 
 export function useGameSocket(token: string | undefined, initialGame?: GameState) {
   const [game, setGame] = useState<GameState | undefined>(initialGame);

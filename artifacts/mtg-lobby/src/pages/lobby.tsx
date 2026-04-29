@@ -6,7 +6,7 @@ import { useGameSocket, getSession, clearSession } from "../hooks/use-game-socke
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Skull, Shield, Swords, WifiOff, LogOut, Settings, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2 } from "lucide-react";
+import { Copy, Skull, Shield, Swords, WifiOff, LogOut, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2, Dices, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Player, GameState, GameLogEntry, CommanderDamageEntry } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,12 +80,26 @@ export default function Lobby() {
   const [selectedPlayerForDamage, setSelectedPlayerForDamage] = useState<Player | null>(null);
   const [damageAmount, setDamageAmount] = useState<number>(0);
   const [damageDealerId, setDamageDealerId] = useState<string>("");
+  const [lastRoll, setLastRoll] = useState<{ id: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!session && !isLoadingInitial && !initialGame) {
       setLocation("/");
     }
   }, [session, isLoadingInitial, initialGame, setLocation]);
+
+  useEffect(() => {
+    const latestRoll = game?.log.find((e) => e.kind === "roll");
+    if (!latestRoll) return;
+    if (lastRoll?.id === latestRoll.id) return;
+    setLastRoll({ id: latestRoll.id, message: latestRoll.message });
+    const timer = setTimeout(() => {
+      setLastRoll((current) =>
+        current?.id === latestRoll.id ? null : current,
+      );
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [game?.log, lastRoll?.id]);
 
   if (!session) {
     return (
@@ -157,6 +171,46 @@ export default function Lobby() {
               <Swords className="w-4 h-4" /> Turn {activeGame.turnNumber}
             </div>
           )}
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon" className="relative" title="Roll dice / flip coin">
+                <Dices className="w-5 h-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Roll</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-3 py-2">
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => sendAction({ type: "roll", kind: "coin" })}
+                >
+                  <Coins className="w-7 h-7" />
+                  <span className="font-bold">Coin</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => sendAction({ type: "roll", kind: "d6" })}
+                >
+                  <Dices className="w-7 h-7" />
+                  <span className="font-bold">D6</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col gap-2"
+                  onClick={() => sendAction({ type: "roll", kind: "d20" })}
+                >
+                  <Dices className="w-7 h-7" />
+                  <span className="font-bold">D20</span>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Result is broadcast to everyone in the lobby.</p>
+            </DialogContent>
+          </Dialog>
 
           <Dialog>
             <DialogTrigger asChild>
@@ -314,6 +368,23 @@ export default function Lobby() {
         )}
       </AnimatePresence>
 
+      {/* Roll Result Toast */}
+      <AnimatePresence>
+        {lastRoll && (
+          <motion.div
+            key={lastRoll.id}
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 320, damping: 24 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary text-foreground px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium pointer-events-none"
+          >
+            <Dices className="w-5 h-5 text-primary" />
+            <span>{lastRoll.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Board */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col">
         {activeGame.status === "waiting" && activeGame.players.length === 1 && (
@@ -388,9 +459,52 @@ export default function Lobby() {
                     </div>
 
                     {!isMe && (
-                      <Button variant="ghost" className="mt-8 text-muted-foreground hover:text-foreground" onClick={() => openDamageDialog(player)}>
+                      <Button variant="ghost" className="mt-6 text-muted-foreground hover:text-foreground" onClick={() => openDamageDialog(player)}>
                         <Shield className="w-4 h-4 mr-2" /> Deal Cmdr Damage
                       </Button>
+                    )}
+
+                    {activeGame.players.length > 1 && (
+                      <div className="mt-6 w-full">
+                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 text-center font-semibold">
+                          Cmdr Damage Received
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-1.5">
+                          {activeGame.players
+                            .filter(opp => opp.id !== player.id)
+                            .map(opp => {
+                              const dmg = activeGame.commanderDamage.find(
+                                cd => cd.toPlayerId === player.id && cd.fromPlayerId === opp.id,
+                              )?.amount || 0;
+                              const lethal = dmg >= 21;
+                              return (
+                                <button
+                                  key={opp.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedPlayerForDamage(player);
+                                    setDamageDealerId(opp.id);
+                                    setDamageAmount(dmg);
+                                  }}
+                                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-mono tabular-nums transition-colors ${
+                                    lethal
+                                      ? 'bg-destructive/20 border-destructive text-destructive font-bold'
+                                      : dmg > 0
+                                        ? 'bg-secondary border-border hover:border-foreground/40'
+                                        : 'bg-secondary/40 border-border/40 text-muted-foreground hover:border-foreground/30'
+                                  }`}
+                                  title={`Damage from ${opp.name}`}
+                                >
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                                    style={{ backgroundColor: opp.color }}
+                                  />
+                                  <span>{dmg}/21</span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>

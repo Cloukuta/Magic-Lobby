@@ -27,7 +27,8 @@ export type GameLogKind =
   | "playerLeft"
   | "playerEliminated"
   | "gameStarted"
-  | "gameReset";
+  | "gameReset"
+  | "roll";
 
 export type GameLogEntry = {
   id: string;
@@ -439,6 +440,43 @@ export function setStartingLife(
   for (const p of game.players) {
     p.life = next;
   }
+}
+
+export type RollKind = "coin" | "d6" | "d20";
+
+export function rollDice(
+  game: Game,
+  actor: Player,
+  kind: RollKind,
+): void {
+  let result: string;
+  let amount: number;
+  switch (kind) {
+    case "coin": {
+      const flip = Math.random() < 0.5 ? "Heads" : "Tails";
+      result = `flipped a coin → ${flip}`;
+      amount = flip === "Heads" ? 1 : 0;
+      break;
+    }
+    case "d6": {
+      amount = 1 + Math.floor(Math.random() * 6);
+      result = `rolled D6 → ${amount}`;
+      break;
+    }
+    case "d20": {
+      amount = 1 + Math.floor(Math.random() * 20);
+      result = `rolled D20 → ${amount}`;
+      break;
+    }
+    default:
+      return;
+  }
+  appendLog(game, {
+    kind: "roll",
+    message: `${actor.name} ${result}`,
+    actorId: actor.id,
+    amount,
+  });
 }
 
 export function setConnected(player: Player, connected: boolean): void {

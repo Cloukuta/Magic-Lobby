@@ -13,8 +13,10 @@ import {
   resetGame,
   kickPlayer,
   setStartingLife,
+  rollDice,
   type Game,
   type Player,
+  type RollKind,
 } from "./store";
 
 type GameSocket = WebSocket & {
@@ -101,6 +103,7 @@ type ClientMessage =
   | { type: "resetGame" }
   | { type: "kickPlayer"; playerId: string }
   | { type: "setStartingLife"; value: number }
+  | { type: "roll"; kind: RollKind }
   | { type: "ping" };
 
 function handleMessage(
@@ -163,6 +166,9 @@ function handleMessage(
     }
     case "setStartingLife":
       setStartingLife(game, player, msg.value);
+      break;
+    case "roll":
+      rollDice(game, player, msg.kind);
       break;
     case "ping":
       send(ws, { type: "pong" });

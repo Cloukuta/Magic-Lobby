@@ -218,6 +218,7 @@ components:
             - playerEliminated
             - gameStarted
             - gameReset
+            - roll
         message:
           type: string
         actorId:
