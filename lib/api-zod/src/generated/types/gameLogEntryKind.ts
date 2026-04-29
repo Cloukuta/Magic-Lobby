@@ -19,4 +19,5 @@ export const GameLogEntryKind = {
   gameStarted: "gameStarted",
   gameReset: "gameReset",
   roll: "roll",
+  orderRandomized: "orderRandomized",
 } as const;

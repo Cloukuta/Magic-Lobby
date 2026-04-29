@@ -28,7 +28,8 @@ export type GameLogKind =
   | "playerEliminated"
   | "gameStarted"
   | "gameReset"
-  | "roll";
+  | "roll"
+  | "orderRandomized";
 
 export type GameLogEntry = {
   id: string;
@@ -359,15 +360,16 @@ export function randomizeOrder(game: Game, actor: Player): void {
   });
   const ordered = [...game.players].sort((a, b) => a.position - b.position);
   appendLog(game, {
-    kind: "gameStarted",
+    kind: "orderRandomized",
     message: `Turn order randomized: ${ordered.map((p) => p.name).join(" → ")}`,
     actorId: actor.id,
   });
 }
 
 export function nextTurn(game: Game, actor: Player): void {
-  if (!actor.isHost) return;
   if (game.status !== "active") return;
+  // Host can always advance; otherwise only the current turn player may pass their own turn.
+  if (!actor.isHost && actor.id !== game.currentTurnPlayerId) return;
   const order = [...game.players].sort((a, b) => a.position - b.position);
   const aliveOrder = order.filter((p) => !p.isEliminated);
   if (aliveOrder.length === 0) return;

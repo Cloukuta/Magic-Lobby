@@ -219,6 +219,7 @@ components:
             - gameStarted
             - gameReset
             - roll
+            - orderRandomized
         message:
           type: string
         actorId:

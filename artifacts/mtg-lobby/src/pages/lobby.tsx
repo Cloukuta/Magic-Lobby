@@ -80,7 +80,31 @@ export default function Lobby() {
   const [selectedPlayerForDamage, setSelectedPlayerForDamage] = useState<Player | null>(null);
   const [damageAmount, setDamageAmount] = useState<number>(0);
   const [damageDealerId, setDamageDealerId] = useState<string>("");
-  const [lastRoll, setLastRoll] = useState<{ id: string; message: string } | null>(null);
+  const [lastEvent, setLastEvent] = useState<{ id: string; message: string; kind: "roll" | "orderRandomized" } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetInactivity = () => {
+    if (inactivityRef.current) clearTimeout(inactivityRef.current);
+    inactivityRef.current = setTimeout(() => setExpandedId(null), 15000);
+  };
+
+  const handleExpand = (id: string) => {
+    setExpandedId((prev) => {
+      if (prev === id) {
+        if (inactivityRef.current) clearTimeout(inactivityRef.current);
+        return null;
+      }
+      return id;
+    });
+    resetInactivity();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (inactivityRef.current) clearTimeout(inactivityRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!session && !isLoadingInitial && !initialGame) {
@@ -89,17 +113,23 @@ export default function Lobby() {
   }, [session, isLoadingInitial, initialGame, setLocation]);
 
   useEffect(() => {
-    const latestRoll = game?.log.find((e) => e.kind === "roll");
-    if (!latestRoll) return;
-    if (lastRoll?.id === latestRoll.id) return;
-    setLastRoll({ id: latestRoll.id, message: latestRoll.message });
+    const latest = game?.log.find(
+      (e) => e.kind === "roll" || e.kind === "orderRandomized",
+    );
+    if (!latest) return;
+    if (lastEvent?.id === latest.id) return;
+    setLastEvent({
+      id: latest.id,
+      message: latest.message,
+      kind: latest.kind as "roll" | "orderRandomized",
+    });
     const timer = setTimeout(() => {
-      setLastRoll((current) =>
-        current?.id === latestRoll.id ? null : current,
+      setLastEvent((current) =>
+        current?.id === latest.id ? null : current,
       );
     }, 3500);
     return () => clearTimeout(timer);
-  }, [game?.log, lastRoll?.id]);
+  }, [game?.log, lastEvent?.id]);
 
   if (!session) {
     return (
@@ -377,19 +407,23 @@ export default function Lobby() {
         )}
       </AnimatePresence>
 
-      {/* Roll Result Toast */}
+      {/* Event Toast (rolls + randomize confirmation) */}
       <AnimatePresence>
-        {lastRoll && (
+        {lastEvent && (
           <motion.div
-            key={lastRoll.id}
+            key={lastEvent.id}
             initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary text-foreground px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium pointer-events-none"
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary text-foreground px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium pointer-events-none max-w-[90vw]"
           >
-            <Dices className="w-5 h-5 text-primary" />
-            <span>{lastRoll.message}</span>
+            {lastEvent.kind === "roll" ? (
+              <Dices className="w-5 h-5 text-primary shrink-0" />
+            ) : (
+              <Shuffle className="w-5 h-5 text-primary shrink-0" />
+            )}
+            <span className="text-sm md:text-base">{lastEvent.message}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -406,26 +440,28 @@ export default function Lobby() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full">
-          {activeGame.players.map(player => {
-            const isMe = player.id === session.playerId;
+        {(() => {
+          const ordered = [...activeGame.players].sort((a, b) => a.position - b.position);
+          const meCard = ordered.find(p => p.id === session.playerId);
+          const others = ordered.filter(p => p.id !== session.playerId);
+
+          const renderExpandedCard = (player: Player, isMe: boolean) => {
             const isTurn = activeGame.currentTurnPlayerId === player.id;
-            
             return (
-              <motion.div 
+              <motion.div
                 layout
-                key={player.id} 
+                key={player.id}
+                onPointerDown={!isMe ? resetInactivity : undefined}
                 className={`relative flex flex-col rounded-xl overflow-hidden border-2 transition-colors duration-500 bg-card ${isTurn ? 'border-primary shadow-[0_0_30px_rgba(var(--primary),0.3)] z-10' : 'border-card-border'}`}
                 style={{ '--player-color': player.color } as any}
-                animate={isTurn ? { scale: 1.02 } : { scale: 1 }}
+                animate={isTurn ? { scale: 1.01 } : { scale: 1 }}
               >
-                {/* Color bar */}
                 <div className="h-3 w-full" style={{ backgroundColor: player.color }} />
-                
+
                 <div className="p-6 flex-1 flex flex-col items-center relative">
                   <AnimatePresence>
                     {player.isEliminated && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="absolute inset-0 bg-background/85 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center"
@@ -437,12 +473,24 @@ export default function Lobby() {
                   </AnimatePresence>
 
                   <div className="flex items-center justify-between w-full mb-6">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-2xl tracking-tight" style={{ color: isTurn ? player.color : 'inherit' }}>{player.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {!isMe ? (
+                        <button
+                          type="button"
+                          onClick={() => handleExpand(player.id)}
+                          className="font-bold text-2xl tracking-tight hover:opacity-80 transition-opacity truncate"
+                          style={{ color: isTurn ? player.color : 'inherit' }}
+                          title="Tap to collapse"
+                        >
+                          {player.name}
+                        </button>
+                      ) : (
+                        <span className="font-bold text-2xl tracking-tight truncate" style={{ color: isTurn ? player.color : 'inherit' }}>{player.name}</span>
+                      )}
                       {isMe && <span className="text-xs font-bold uppercase px-2 py-0.5 bg-primary/20 text-primary rounded border border-primary/30">You</span>}
                       {player.isHost && <span className="text-xs uppercase px-2 py-0.5 bg-secondary text-muted-foreground rounded border border-border">Host</span>}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                       {isHost && !isMe && !player.isEliminated && (
                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => sendAction({ type: "kickPlayer", playerId: player.id })}>
                           <LogOut className="w-3 h-3" />
@@ -453,12 +501,23 @@ export default function Lobby() {
                   </div>
 
                   <div className="flex-1 flex flex-col items-center justify-center w-full">
+                    {isMe && isTurn && activeGame.status === "active" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mb-5 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
+                        onClick={() => sendAction({ type: "nextTurn" })}
+                      >
+                        <FastForward className="w-4 h-4 mr-2" /> Pass My Turn
+                      </Button>
+                    )}
+
                     <div className="flex items-center justify-between w-full max-w-[320px]">
                       <div className="flex flex-col gap-4">
                         <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: -5 })}>-5</Button>
                         <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: -1 })}>-1</Button>
                       </div>
-                      
+
                       <AnimatedLife life={player.life} />
 
                       <div className="flex flex-col gap-4">
@@ -519,8 +578,71 @@ export default function Lobby() {
                 </div>
               </motion.div>
             );
-          })}
-        </div>
+          };
+
+          const renderCompactCard = (player: Player) => {
+            const isTurn = activeGame.currentTurnPlayerId === player.id;
+            const orderIdx = ordered.findIndex(p => p.id === player.id);
+            return (
+              <motion.button
+                layout
+                type="button"
+                key={player.id}
+                onClick={() => handleExpand(player.id)}
+                className={`relative flex items-center gap-3 rounded-xl overflow-hidden border-2 bg-card pl-2 pr-4 py-2.5 text-left transition-colors hover:border-foreground/40 ${isTurn ? 'border-primary shadow-[0_0_15px_rgba(var(--primary),0.25)]' : 'border-card-border'} ${player.isEliminated ? 'opacity-60' : ''}`}
+              >
+                <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: player.color }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-base truncate" style={{ color: isTurn ? player.color : undefined }}>
+                      {player.name}
+                    </span>
+                    {player.isHost && (
+                      <span className="text-[9px] uppercase px-1 py-0.5 bg-secondary text-muted-foreground rounded">Host</span>
+                    )}
+                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono">#{orderIdx + 1}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${player.isConnected ? 'bg-green-500' : 'bg-destructive'}`} />
+                  </div>
+                  {isTurn && activeGame.status === "active" && (
+                    <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Current Turn</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {player.isEliminated && <Skull className="w-5 h-5 text-destructive" />}
+                  <div className={`text-3xl font-serif font-black tabular-nums leading-none ${player.life <= 0 ? 'text-destructive' : ''}`}>
+                    {player.life}
+                  </div>
+                </div>
+              </motion.button>
+            );
+          };
+
+          return (
+            <div className="max-w-5xl mx-auto w-full space-y-6">
+              {/* My panel — always full at top */}
+              {meCard && renderExpandedCard(meCard, true)}
+
+              {/* Other players */}
+              {others.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3 font-semibold flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5" /> Other Players ({others.length})
+                    <span className="text-[10px] normal-case tracking-normal text-muted-foreground/70 ml-1">— tap a name to expand</span>
+                  </div>
+                  <div className="space-y-3">
+                    <AnimatePresence initial={false}>
+                      {others.map(player =>
+                        expandedId === player.id
+                          ? renderExpandedCard(player, false)
+                          : renderCompactCard(player),
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </main>
 
       <Dialog open={!!selectedPlayerForDamage} onOpenChange={(o) => !o && setSelectedPlayerForDamage(null)}>
