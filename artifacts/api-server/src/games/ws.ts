@@ -14,6 +14,7 @@ import {
   kickPlayer,
   setStartingLife,
   rollDice,
+  randomizeOrder,
   type Game,
   type Player,
   type RollKind,
@@ -104,6 +105,7 @@ type ClientMessage =
   | { type: "kickPlayer"; playerId: string }
   | { type: "setStartingLife"; value: number }
   | { type: "roll"; kind: RollKind }
+  | { type: "randomizeOrder" }
   | { type: "ping" };
 
 function handleMessage(
@@ -169,6 +171,9 @@ function handleMessage(
       break;
     case "roll":
       rollDice(game, player, msg.kind);
+      break;
+    case "randomizeOrder":
+      randomizeOrder(game, player);
       break;
     case "ping":
       send(ws, { type: "pong" });

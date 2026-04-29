@@ -6,7 +6,7 @@ import { useGameSocket, getSession, clearSession } from "../hooks/use-game-socke
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Skull, Shield, Swords, WifiOff, LogOut, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2, Dices, Coins } from "lucide-react";
+import { Copy, Skull, Shield, Swords, WifiOff, LogOut, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2, Dices, Coins, Shuffle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Player, GameState, GameLogEntry, CommanderDamageEntry } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -318,6 +318,15 @@ export default function Lobby() {
             <>
               <Button size="sm" variant="outline" onClick={() => sendAction({ type: "startGame" })}>
                 <Play className="w-4 h-4 mr-2" /> Start Game
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={activeGame.players.length < 2}
+                onClick={() => sendAction({ type: "randomizeOrder" })}
+                title="Shuffle turn order"
+              >
+                <Shuffle className="w-4 h-4 mr-2" /> Randomize Order
               </Button>
               <div className="flex items-center gap-2 border-l pl-4 border-border">
                 <span className="text-sm text-muted-foreground">Starting Life:</span>

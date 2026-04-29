@@ -332,10 +332,35 @@ export function startGame(game: Game, actor: Player): void {
   if (game.status !== "waiting") return;
   game.status = "active";
   game.turnNumber = 1;
-  game.currentTurnPlayerId = game.hostId;
+  const order = [...game.players].sort((a, b) => a.position - b.position);
+  const first = order.find((p) => !p.isEliminated) ?? order[0];
+  game.currentTurnPlayerId = first?.id ?? game.hostId;
   appendLog(game, {
     kind: "gameStarted",
-    message: `Game started — ${game.players.find((p) => p.id === game.hostId)?.name ?? "Host"} goes first`,
+    message: `Game started — ${first?.name ?? "Host"} goes first`,
+    actorId: actor.id,
+  });
+}
+
+export function randomizeOrder(game: Game, actor: Player): void {
+  if (!actor.isHost) return;
+  if (game.status !== "waiting") return;
+  if (game.players.length < 2) return;
+  // Fisher–Yates shuffle of positions
+  const positions = game.players.map((_, i) => i);
+  for (let i = positions.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = positions[i]!;
+    positions[i] = positions[j]!;
+    positions[j] = tmp;
+  }
+  game.players.forEach((p, i) => {
+    p.position = positions[i]!;
+  });
+  const ordered = [...game.players].sort((a, b) => a.position - b.position);
+  appendLog(game, {
+    kind: "gameStarted",
+    message: `Turn order randomized: ${ordered.map((p) => p.name).join(" → ")}`,
     actorId: actor.id,
   });
 }
