@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sword } from "lucide-react";
+import logoUrl from "@assets/summonerdeck_1777491015118.webp";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -46,8 +46,8 @@ export default function Home() {
     <div className="min-h-[100dvh] flex items-center justify-center p-4 bg-background dark">
       <Card className="w-full max-w-md border-primary/20 shadow-2xl shadow-primary/10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sword className="w-8 h-8 text-primary" />
+          <div className="mx-auto w-24 h-24 rounded-2xl overflow-hidden border border-primary/20 shadow-lg shadow-primary/10">
+            <img src={logoUrl} alt="Summoner's Deck" className="w-full h-full object-cover" />
           </div>
           <div>
             <CardTitle className="text-3xl font-serif text-primary">Commander Lobby</CardTitle>
