@@ -6,4 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./commanderDamageEntry";
+export * from "./createGameBody";
+export * from "./gameLogEntry";
+export * from "./gameLogEntryKind";
+export * from "./gameState";
+export * from "./gameStateStatus";
+export * from "./gameStats";
+export * from "./gameStatsBiggestSingleHit";
+export * from "./gameStatsTotalDamageDealtItem";
 export * from "./healthStatus";
+export * from "./joinGameBody";
+export * from "./joinResult";
+export * from "./player";

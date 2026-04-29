@@ -14,3 +14,227 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Creates a new game with the caller as host. Returns the game state, the host player id, and an auth token used for the host's WebSocket session.
+ * @summary Create a new game lobby (host)
+ */
+export const createGameBodyHostNameMax = 32;
+
+export const createGameBodyStartingLifeDefault = 40;
+export const createGameBodyStartingLifeMax = 100;
+
+export const CreateGameBody = zod.object({
+  hostName: zod.string().min(1).max(createGameBodyHostNameMax),
+  startingLife: zod
+    .number()
+    .min(1)
+    .max(createGameBodyStartingLifeMax)
+    .default(createGameBodyStartingLifeDefault),
+});
+
+export const CreateGameResponse = zod.object({
+  token: zod.string(),
+  playerId: zod.string(),
+  game: zod.object({
+    id: zod.string(),
+    code: zod.string(),
+    status: zod.enum(["waiting", "active", "ended"]),
+    startingLife: zod.number(),
+    turnNumber: zod.number(),
+    currentTurnPlayerId: zod.string().nullish(),
+    hostId: zod.string(),
+    players: zod.array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        life: zod.number(),
+        isHost: zod.boolean(),
+        isConnected: zod.boolean(),
+        isEliminated: zod.boolean(),
+        position: zod.number(),
+        color: zod.string(),
+      }),
+    ),
+    commanderDamage: zod.array(
+      zod.object({
+        fromPlayerId: zod.string(),
+        toPlayerId: zod.string(),
+        amount: zod.number(),
+      }),
+    ),
+    log: zod.array(
+      zod.object({
+        id: zod.string(),
+        at: zod.coerce.date(),
+        kind: zod.enum([
+          "lifeChanged",
+          "commanderDamage",
+          "turnAdvanced",
+          "playerJoined",
+          "playerLeft",
+          "playerEliminated",
+          "gameStarted",
+          "gameReset",
+        ]),
+        message: zod.string(),
+        actorId: zod.string().optional(),
+        targetId: zod.string().optional(),
+        amount: zod.number().optional(),
+      }),
+    ),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
+ * @summary Join an existing game lobby with a code
+ */
+export const JoinGameParams = zod.object({
+  code: zod.coerce.string(),
+});
+
+export const joinGameBodyNameMax = 32;
+
+export const JoinGameBody = zod.object({
+  name: zod.string().min(1).max(joinGameBodyNameMax),
+});
+
+export const JoinGameResponse = zod.object({
+  token: zod.string(),
+  playerId: zod.string(),
+  game: zod.object({
+    id: zod.string(),
+    code: zod.string(),
+    status: zod.enum(["waiting", "active", "ended"]),
+    startingLife: zod.number(),
+    turnNumber: zod.number(),
+    currentTurnPlayerId: zod.string().nullish(),
+    hostId: zod.string(),
+    players: zod.array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        life: zod.number(),
+        isHost: zod.boolean(),
+        isConnected: zod.boolean(),
+        isEliminated: zod.boolean(),
+        position: zod.number(),
+        color: zod.string(),
+      }),
+    ),
+    commanderDamage: zod.array(
+      zod.object({
+        fromPlayerId: zod.string(),
+        toPlayerId: zod.string(),
+        amount: zod.number(),
+      }),
+    ),
+    log: zod.array(
+      zod.object({
+        id: zod.string(),
+        at: zod.coerce.date(),
+        kind: zod.enum([
+          "lifeChanged",
+          "commanderDamage",
+          "turnAdvanced",
+          "playerJoined",
+          "playerLeft",
+          "playerEliminated",
+          "gameStarted",
+          "gameReset",
+        ]),
+        message: zod.string(),
+        actorId: zod.string().optional(),
+        targetId: zod.string().optional(),
+        amount: zod.number().optional(),
+      }),
+    ),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
+ * @summary Get current game state by code
+ */
+export const GetGameParams = zod.object({
+  code: zod.coerce.string(),
+});
+
+export const GetGameResponse = zod.object({
+  id: zod.string(),
+  code: zod.string(),
+  status: zod.enum(["waiting", "active", "ended"]),
+  startingLife: zod.number(),
+  turnNumber: zod.number(),
+  currentTurnPlayerId: zod.string().nullish(),
+  hostId: zod.string(),
+  players: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      life: zod.number(),
+      isHost: zod.boolean(),
+      isConnected: zod.boolean(),
+      isEliminated: zod.boolean(),
+      position: zod.number(),
+      color: zod.string(),
+    }),
+  ),
+  commanderDamage: zod.array(
+    zod.object({
+      fromPlayerId: zod.string(),
+      toPlayerId: zod.string(),
+      amount: zod.number(),
+    }),
+  ),
+  log: zod.array(
+    zod.object({
+      id: zod.string(),
+      at: zod.coerce.date(),
+      kind: zod.enum([
+        "lifeChanged",
+        "commanderDamage",
+        "turnAdvanced",
+        "playerJoined",
+        "playerLeft",
+        "playerEliminated",
+        "gameStarted",
+        "gameReset",
+      ]),
+      message: zod.string(),
+      actorId: zod.string().optional(),
+      targetId: zod.string().optional(),
+      amount: zod.number().optional(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get aggregate stats for a game (totals, eliminations, biggest hit)
+ */
+export const GetGameStatsParams = zod.object({
+  code: zod.coerce.string(),
+});
+
+export const GetGameStatsResponse = zod.object({
+  totalDamageDealt: zod.array(
+    zod.object({
+      playerId: zod.string(),
+      playerName: zod.string(),
+      total: zod.number(),
+    }),
+  ),
+  biggestSingleHit: zod
+    .object({
+      fromPlayerId: zod.string(),
+      fromPlayerName: zod.string(),
+      toPlayerId: zod.string(),
+      toPlayerName: zod.string(),
+      amount: zod.number(),
+    })
+    .nullish(),
+  eliminatedCount: zod.number(),
+  turnsPlayed: zod.number(),
+});

@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: games
+    description: MTG Commander game lobby operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /games:
+    post:
+      operationId: createGame
+      tags: [games]
+      summary: Create a new game lobby (host)
+      description: Creates a new game with the caller as host. Returns the game state, the host player id, and an auth token used for the host's WebSocket session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGameBody"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinResult"
+  /games/{code}/join:
+    post:
+      operationId: joinGame
+      tags: [games]
+      summary: Join an existing game lobby with a code
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinGameBody"
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinResult"
+        "404":
+          description: Game not found
+        "409":
+          description: Game is full or not joinable
+  /games/{code}:
+    get:
+      operationId: getGame
+      tags: [games]
+      summary: Get current game state by code
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameState"
+        "404":
+          description: Not found
+  /games/{code}/stats:
+    get:
+      operationId: getGameStats
+      tags: [games]
+      summary: Get aggregate stats for a game (totals, eliminations, biggest hit)
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameStats"
+        "404":
+          description: Not found
 components:
   schemas:
     HealthStatus:
@@ -33,4 +122,195 @@ components:
           type: string
       required:
         - status
-
+    CreateGameBody:
+      type: object
+      properties:
+        hostName:
+          type: string
+          minLength: 1
+          maxLength: 32
+        startingLife:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 40
+      required:
+        - hostName
+    JoinGameBody:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+        - name
+    JoinResult:
+      type: object
+      properties:
+        token:
+          type: string
+        playerId:
+          type: string
+        game:
+          $ref: "#/components/schemas/GameState"
+      required:
+        - token
+        - playerId
+        - game
+    Player:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        life:
+          type: integer
+        isHost:
+          type: boolean
+        isConnected:
+          type: boolean
+        isEliminated:
+          type: boolean
+        position:
+          type: integer
+        color:
+          type: string
+      required:
+        - id
+        - name
+        - life
+        - isHost
+        - isConnected
+        - isEliminated
+        - position
+        - color
+    CommanderDamageEntry:
+      type: object
+      properties:
+        fromPlayerId:
+          type: string
+        toPlayerId:
+          type: string
+        amount:
+          type: integer
+      required:
+        - fromPlayerId
+        - toPlayerId
+        - amount
+    GameLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+            - lifeChanged
+            - commanderDamage
+            - turnAdvanced
+            - playerJoined
+            - playerLeft
+            - playerEliminated
+            - gameStarted
+            - gameReset
+        message:
+          type: string
+        actorId:
+          type: string
+        targetId:
+          type: string
+        amount:
+          type: integer
+      required:
+        - id
+        - at
+        - kind
+        - message
+    GameState:
+      type: object
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        status:
+          type: string
+          enum: [waiting, active, ended]
+        startingLife:
+          type: integer
+        turnNumber:
+          type: integer
+        currentTurnPlayerId:
+          type: string
+          nullable: true
+        hostId:
+          type: string
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/Player"
+        commanderDamage:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommanderDamageEntry"
+        log:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameLogEntry"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - code
+        - status
+        - startingLife
+        - turnNumber
+        - hostId
+        - players
+        - commanderDamage
+        - log
+        - createdAt
+    GameStats:
+      type: object
+      properties:
+        totalDamageDealt:
+          type: array
+          items:
+            type: object
+            properties:
+              playerId:
+                type: string
+              playerName:
+                type: string
+              total:
+                type: integer
+            required: [playerId, playerName, total]
+        biggestSingleHit:
+          type: object
+          nullable: true
+          properties:
+            fromPlayerId:
+              type: string
+            fromPlayerName:
+              type: string
+            toPlayerId:
+              type: string
+            toPlayerName:
+              type: string
+            amount:
+              type: integer
+          required: [fromPlayerId, fromPlayerName, toPlayerId, toPlayerName, amount]
+        eliminatedCount:
+          type: integer
+        turnsPlayed:
+          type: integer
+      required:
+        - totalDamageDealt
+        - eliminatedCount
+        - turnsPlayed

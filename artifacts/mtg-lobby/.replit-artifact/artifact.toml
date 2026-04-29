@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "MTG Commander Lobby"
+version = "1.0.0"
+id = "artifacts/mtg-lobby"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19291
+
+[services.development]
+run = "pnpm --filter @workspace/mtg-lobby run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mtg-lobby", "run", "build" ]
+publicDir = "artifacts/mtg-lobby/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19291"
+BASE_PATH = "/"

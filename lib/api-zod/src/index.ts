@@ -1,2 +1,14 @@
 export * from "./generated/api";
-export * from "./generated/types";
+export type {
+  CommanderDamageEntry,
+  GameLogEntry,
+  GameLogEntryKind,
+  GameState,
+  GameStateStatus,
+  GameStats,
+  GameStatsBiggestSingleHit,
+  GameStatsTotalDamageDealtItem,
+  HealthStatus,
+  JoinResult,
+  Player,
+} from "./generated/types";

@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  CreateGameBody,
+  GameState,
+  GameStats,
+  HealthStatus,
+  JoinGameBody,
+  JoinResult,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +102,344 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Creates a new game with the caller as host. Returns the game state, the host player id, and an auth token used for the host's WebSocket session.
+ * @summary Create a new game lobby (host)
+ */
+export const getCreateGameUrl = () => {
+  return `/api/games`;
+};
+
+export const createGame = async (
+  createGameBody: CreateGameBody,
+  options?: RequestInit,
+): Promise<JoinResult> => {
+  return customFetch<JoinResult>(getCreateGameUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createGameBody),
+  });
+};
+
+export const getCreateGameMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createGame>>,
+    TError,
+    { data: BodyType<CreateGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createGame>>,
+  TError,
+  { data: BodyType<CreateGameBody> },
+  TContext
+> => {
+  const mutationKey = ["createGame"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createGame>>,
+    { data: BodyType<CreateGameBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createGame(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateGameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createGame>>
+>;
+export type CreateGameMutationBody = BodyType<CreateGameBody>;
+export type CreateGameMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new game lobby (host)
+ */
+export const useCreateGame = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createGame>>,
+    TError,
+    { data: BodyType<CreateGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createGame>>,
+  TError,
+  { data: BodyType<CreateGameBody> },
+  TContext
+> => {
+  return useMutation(getCreateGameMutationOptions(options));
+};
+
+/**
+ * @summary Join an existing game lobby with a code
+ */
+export const getJoinGameUrl = (code: string) => {
+  return `/api/games/${code}/join`;
+};
+
+export const joinGame = async (
+  code: string,
+  joinGameBody: JoinGameBody,
+  options?: RequestInit,
+): Promise<JoinResult> => {
+  return customFetch<JoinResult>(getJoinGameUrl(code), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(joinGameBody),
+  });
+};
+
+export const getJoinGameMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinGame>>,
+    TError,
+    { code: string; data: BodyType<JoinGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof joinGame>>,
+  TError,
+  { code: string; data: BodyType<JoinGameBody> },
+  TContext
+> => {
+  const mutationKey = ["joinGame"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof joinGame>>,
+    { code: string; data: BodyType<JoinGameBody> }
+  > = (props) => {
+    const { code, data } = props ?? {};
+
+    return joinGame(code, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type JoinGameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof joinGame>>
+>;
+export type JoinGameMutationBody = BodyType<JoinGameBody>;
+export type JoinGameMutationError = ErrorType<void>;
+
+/**
+ * @summary Join an existing game lobby with a code
+ */
+export const useJoinGame = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof joinGame>>,
+    TError,
+    { code: string; data: BodyType<JoinGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof joinGame>>,
+  TError,
+  { code: string; data: BodyType<JoinGameBody> },
+  TContext
+> => {
+  return useMutation(getJoinGameMutationOptions(options));
+};
+
+/**
+ * @summary Get current game state by code
+ */
+export const getGetGameUrl = (code: string) => {
+  return `/api/games/${code}`;
+};
+
+export const getGame = async (
+  code: string,
+  options?: RequestInit,
+): Promise<GameState> => {
+  return customFetch<GameState>(getGetGameUrl(code), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGameQueryKey = (code: string) => {
+  return [`/api/games/${code}`] as const;
+};
+
+export const getGetGameQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGame>>,
+  TError = ErrorType<void>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGame>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGameQueryKey(code);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGame>>> = ({
+    signal,
+  }) => getGame(code, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!code,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getGame>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetGameQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGame>>
+>;
+export type GetGameQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current game state by code
+ */
+
+export function useGetGame<
+  TData = Awaited<ReturnType<typeof getGame>>,
+  TError = ErrorType<void>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGame>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGameQueryOptions(code, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get aggregate stats for a game (totals, eliminations, biggest hit)
+ */
+export const getGetGameStatsUrl = (code: string) => {
+  return `/api/games/${code}/stats`;
+};
+
+export const getGameStats = async (
+  code: string,
+  options?: RequestInit,
+): Promise<GameStats> => {
+  return customFetch<GameStats>(getGetGameStatsUrl(code), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGameStatsQueryKey = (code: string) => {
+  return [`/api/games/${code}/stats`] as const;
+};
+
+export const getGetGameStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGameStats>>,
+  TError = ErrorType<void>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGameStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGameStatsQueryKey(code);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGameStats>>> = ({
+    signal,
+  }) => getGameStats(code, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!code,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGameStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGameStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGameStats>>
+>;
+export type GetGameStatsQueryError = ErrorType<void>;
+
+/**
+ * @summary Get aggregate stats for a game (totals, eliminations, biggest hit)
+ */
+
+export function useGetGameStats<
+  TData = Awaited<ReturnType<typeof getGameStats>>,
+  TError = ErrorType<void>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGameStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGameStatsQueryOptions(code, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -8,3 +8,115 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface CreateGameBody {
+  /**
+   * @minLength 1
+   * @maxLength 32
+   */
+  hostName: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  startingLife?: number;
+}
+
+export interface JoinGameBody {
+  /**
+   * @minLength 1
+   * @maxLength 32
+   */
+  name: string;
+}
+
+export type GameStateStatus =
+  (typeof GameStateStatus)[keyof typeof GameStateStatus];
+
+export const GameStateStatus = {
+  waiting: "waiting",
+  active: "active",
+  ended: "ended",
+} as const;
+
+export interface Player {
+  id: string;
+  name: string;
+  life: number;
+  isHost: boolean;
+  isConnected: boolean;
+  isEliminated: boolean;
+  position: number;
+  color: string;
+}
+
+export interface CommanderDamageEntry {
+  fromPlayerId: string;
+  toPlayerId: string;
+  amount: number;
+}
+
+export type GameLogEntryKind =
+  (typeof GameLogEntryKind)[keyof typeof GameLogEntryKind];
+
+export const GameLogEntryKind = {
+  lifeChanged: "lifeChanged",
+  commanderDamage: "commanderDamage",
+  turnAdvanced: "turnAdvanced",
+  playerJoined: "playerJoined",
+  playerLeft: "playerLeft",
+  playerEliminated: "playerEliminated",
+  gameStarted: "gameStarted",
+  gameReset: "gameReset",
+} as const;
+
+export interface GameLogEntry {
+  id: string;
+  at: string;
+  kind: GameLogEntryKind;
+  message: string;
+  actorId?: string;
+  targetId?: string;
+  amount?: number;
+}
+
+export interface GameState {
+  id: string;
+  code: string;
+  status: GameStateStatus;
+  startingLife: number;
+  turnNumber: number;
+  currentTurnPlayerId?: string | null;
+  hostId: string;
+  players: Player[];
+  commanderDamage: CommanderDamageEntry[];
+  log: GameLogEntry[];
+  createdAt: string;
+}
+
+export interface JoinResult {
+  token: string;
+  playerId: string;
+  game: GameState;
+}
+
+export type GameStatsTotalDamageDealtItem = {
+  playerId: string;
+  playerName: string;
+  total: number;
+};
+
+export type GameStatsBiggestSingleHit = {
+  fromPlayerId: string;
+  fromPlayerName: string;
+  toPlayerId: string;
+  toPlayerName: string;
+  amount: number;
+} | null;
+
+export interface GameStats {
+  totalDamageDealt: GameStatsTotalDamageDealtItem[];
+  biggestSingleHit?: GameStatsBiggestSingleHit;
+  eliminatedCount: number;
+  turnsPlayed: number;
+}
