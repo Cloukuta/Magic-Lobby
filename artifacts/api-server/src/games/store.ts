@@ -23,6 +23,8 @@ export type Player = {
   commanderTax: number;
   commanderName: string;
   manaPool: ManaPool;
+  poisonCounters: number;
+  experienceCounters: number;
 };
 
 export type CommanderDamageEntry = {
@@ -43,7 +45,10 @@ export type GameLogKind =
   | "roll"
   | "orderRandomized"
   | "commanderNameSet"
-  | "commanderTaxUpdated";
+  | "commanderTaxUpdated"
+  | "poisonCounterUpdated"
+  | "experienceCounterUpdated"
+  | "playerRevived";
 
 export type GameLogEntry = {
   id: string;
@@ -155,6 +160,8 @@ export function createGame(input: {
     commanderTax: 0,
     commanderName: "",
     manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
+    poisonCounters: 0,
+    experienceCounters: 0,
   };
   const token = generateToken();
   const game: Game = {
@@ -203,6 +210,8 @@ export function joinGame(
     commanderTax: 0,
     commanderName: "",
     manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
+    poisonCounters: 0,
+    experienceCounters: 0,
   };
   game.players.push(player);
   appendLog(game, {
@@ -240,6 +249,7 @@ function checkElimination(game: Game, player: Player): boolean {
   if (player.isEliminated) return false;
   let eliminated = false;
   if (player.life <= 0) eliminated = true;
+  if (!eliminated && player.poisonCounters >= 10) eliminated = true;
   if (!eliminated) {
     for (const entry of game.commanderDamage) {
       if (entry.toPlayerId === player.id && entry.amount >= 21) {
@@ -428,6 +438,72 @@ export function setTurn(game: Game, actor: Player, playerId: string): void {
   });
 }
 
+export function updatePoisonCounters(
+  game: Game,
+  actor: Player,
+  targetId: string,
+  delta: number,
+): void {
+  const target = game.players.find((p) => p.id === targetId);
+  if (!target) return;
+  if (!actor.isHost && actor.id !== target.id) return;
+  const next = Math.max(0, Math.min(99, target.poisonCounters + delta));
+  if (next === target.poisonCounters) return;
+  target.poisonCounters = next;
+  appendLog(game, {
+    kind: "poisonCounterUpdated",
+    message: `${target.name} has ${next} poison counter${next !== 1 ? "s" : ""}`,
+    actorId: actor.id,
+    targetId: target.id,
+    amount: next,
+  });
+  checkElimination(game, target);
+}
+
+export function updateExperienceCounters(
+  game: Game,
+  actor: Player,
+  targetId: string,
+  delta: number,
+): void {
+  const target = game.players.find((p) => p.id === targetId);
+  if (!target) return;
+  if (!actor.isHost && actor.id !== target.id) return;
+  const next = Math.max(0, target.experienceCounters + delta);
+  if (next === target.experienceCounters) return;
+  target.experienceCounters = next;
+  appendLog(game, {
+    kind: "experienceCounterUpdated",
+    message: `${target.name} has ${next} experience counter${next !== 1 ? "s" : ""}`,
+    actorId: actor.id,
+    targetId: target.id,
+    amount: next,
+  });
+}
+
+export function revivePlayer(
+  game: Game,
+  actor: Player,
+  targetId: string,
+): void {
+  if (!actor.isHost) return;
+  const target = game.players.find((p) => p.id === targetId);
+  if (!target || !target.isEliminated) return;
+  target.isEliminated = false;
+  target.life = Math.max(1, game.startingLife);
+  target.poisonCounters = 0;
+  // Restore game status if it ended
+  if (game.status === "ended") {
+    game.status = "active";
+  }
+  appendLog(game, {
+    kind: "playerRevived",
+    message: `${target.name} was revived (mistake corrected)`,
+    actorId: actor.id,
+    targetId: target.id,
+  });
+}
+
 export function resetGame(game: Game, actor: Player): void {
   if (!actor.isHost) return;
   for (const p of game.players) {
@@ -435,6 +511,8 @@ export function resetGame(game: Game, actor: Player): void {
     p.isEliminated = false;
     p.commanderTax = 0;
     p.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+    p.poisonCounters = 0;
+    p.experienceCounters = 0;
   }
   game.commanderDamage = [];
   game.status = "waiting";

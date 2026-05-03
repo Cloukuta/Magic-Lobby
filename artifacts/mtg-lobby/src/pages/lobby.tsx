@@ -6,7 +6,7 @@ import { useGameSocket, getSession, clearSession } from "../hooks/use-game-socke
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Copy, Skull, Shield, Swords, WifiOff, LogOut, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2, Dices, Coins, Shuffle } from "lucide-react";
+import { Copy, Skull, Shield, Swords, WifiOff, LogOut, FastForward, Play, RefreshCcw, ScrollText, Users, Activity, BarChart2, Dices, Coins, Shuffle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Player, GameState, GameLogEntry, CommanderDamageEntry } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -371,14 +371,22 @@ export default function Lobby() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary text-foreground px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium pointer-events-none max-w-[90vw]"
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-card border-2 border-primary text-foreground px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium max-w-[90vw]"
           >
             {lastEvent.kind === "roll" ? (
               <Dices className="w-5 h-5 text-primary shrink-0" />
             ) : (
               <Shuffle className="w-5 h-5 text-primary shrink-0" />
             )}
-            <span className="text-sm md:text-base">{lastEvent.message}</span>
+            <span className="text-sm md:text-base flex-1">{lastEvent.message}</span>
+            <button
+              type="button"
+              onClick={() => setLastEvent(null)}
+              className="shrink-0 ml-1 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Cerrar"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -426,6 +434,9 @@ export default function Lobby() {
                 onSetCommanderName={(pid, name) => sendAction({ type: "setCommanderName", playerId: pid, commanderName: name })}
                 onUpdateCommanderTax={(pid, delta) => sendAction({ type: "updateCommanderTax", playerId: pid, delta })}
                 onUpdateMana={(color, delta) => sendAction({ type: "updateMana", color, delta })}
+                onUpdatePoison={(pid, delta) => sendAction({ type: "updatePoisonCounters", playerId: pid, delta })}
+                onUpdateExperience={(pid, delta) => sendAction({ type: "updateExperienceCounters", playerId: pid, delta })}
+                onRevive={(pid) => sendAction({ type: "revivePlayer", playerId: pid })}
                 onPointerDown={!isMe ? resetInactivity : undefined}
               />
             );

@@ -35,6 +35,8 @@ export const CreateGameBody = zod.object({
 
 export const createGameResponseGamePlayersItemCommanderTaxDefault = 0;
 export const createGameResponseGamePlayersItemCommanderNameDefault = ``;
+export const createGameResponseGamePlayersItemPoisonCountersDefault = 0;
+export const createGameResponseGamePlayersItemExperienceCountersDefault = 0;
 
 export const CreateGameResponse = zod.object({
   token: zod.string(),
@@ -71,6 +73,12 @@ export const CreateGameResponse = zod.object({
           G: zod.number(),
           C: zod.number(),
         }),
+        poisonCounters: zod
+          .number()
+          .default(createGameResponseGamePlayersItemPoisonCountersDefault),
+        experienceCounters: zod
+          .number()
+          .default(createGameResponseGamePlayersItemExperienceCountersDefault),
       }),
     ),
     commanderDamage: zod.array(
@@ -97,6 +105,9 @@ export const CreateGameResponse = zod.object({
           "orderRandomized",
           "commanderNameSet",
           "commanderTaxUpdated",
+          "poisonCounterUpdated",
+          "experienceCounterUpdated",
+          "playerRevived",
         ]),
         message: zod.string(),
         actorId: zod.string().optional(),
@@ -123,6 +134,8 @@ export const JoinGameBody = zod.object({
 
 export const joinGameResponseGamePlayersItemCommanderTaxDefault = 0;
 export const joinGameResponseGamePlayersItemCommanderNameDefault = ``;
+export const joinGameResponseGamePlayersItemPoisonCountersDefault = 0;
+export const joinGameResponseGamePlayersItemExperienceCountersDefault = 0;
 
 export const JoinGameResponse = zod.object({
   token: zod.string(),
@@ -159,6 +172,12 @@ export const JoinGameResponse = zod.object({
           G: zod.number(),
           C: zod.number(),
         }),
+        poisonCounters: zod
+          .number()
+          .default(joinGameResponseGamePlayersItemPoisonCountersDefault),
+        experienceCounters: zod
+          .number()
+          .default(joinGameResponseGamePlayersItemExperienceCountersDefault),
       }),
     ),
     commanderDamage: zod.array(
@@ -185,6 +204,9 @@ export const JoinGameResponse = zod.object({
           "orderRandomized",
           "commanderNameSet",
           "commanderTaxUpdated",
+          "poisonCounterUpdated",
+          "experienceCounterUpdated",
+          "playerRevived",
         ]),
         message: zod.string(),
         actorId: zod.string().optional(),
@@ -205,6 +227,8 @@ export const GetGameParams = zod.object({
 
 export const getGameResponsePlayersItemCommanderTaxDefault = 0;
 export const getGameResponsePlayersItemCommanderNameDefault = ``;
+export const getGameResponsePlayersItemPoisonCountersDefault = 0;
+export const getGameResponsePlayersItemExperienceCountersDefault = 0;
 
 export const GetGameResponse = zod.object({
   id: zod.string(),
@@ -238,6 +262,12 @@ export const GetGameResponse = zod.object({
         G: zod.number(),
         C: zod.number(),
       }),
+      poisonCounters: zod
+        .number()
+        .default(getGameResponsePlayersItemPoisonCountersDefault),
+      experienceCounters: zod
+        .number()
+        .default(getGameResponsePlayersItemExperienceCountersDefault),
     }),
   ),
   commanderDamage: zod.array(
@@ -264,6 +294,9 @@ export const GetGameResponse = zod.object({
         "orderRandomized",
         "commanderNameSet",
         "commanderTaxUpdated",
+        "poisonCounterUpdated",
+        "experienceCounterUpdated",
+        "playerRevived",
       ]),
       message: zod.string(),
       actorId: zod.string().optional(),

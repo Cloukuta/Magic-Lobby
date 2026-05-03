@@ -53,7 +53,10 @@ type ClientAction =
   | { type: "randomizeOrder" }
   | { type: "updateCommanderTax"; playerId: string; delta: number }
   | { type: "setCommanderName"; playerId: string; commanderName: string }
-  | { type: "updateMana"; color: "W" | "U" | "B" | "R" | "G" | "C"; delta: number };
+  | { type: "updateMana"; color: "W" | "U" | "B" | "R" | "G" | "C"; delta: number }
+  | { type: "updatePoisonCounters"; playerId: string; delta: number }
+  | { type: "updateExperienceCounters"; playerId: string; delta: number }
+  | { type: "revivePlayer"; playerId: string };
 
 export function useGameSocket(token: string | undefined, initialGame?: GameState) {
   const [game, setGame] = useState<GameState | undefined>(initialGame);

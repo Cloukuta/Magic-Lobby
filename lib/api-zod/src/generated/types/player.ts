@@ -19,4 +19,6 @@ export interface Player {
   commanderTax: number;
   commanderName: string;
   manaPool: ManaPool;
+  poisonCounters: number;
+  experienceCounters: number;
 }

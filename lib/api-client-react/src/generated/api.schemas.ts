@@ -60,6 +60,8 @@ export interface Player {
   commanderTax: number;
   commanderName: string;
   manaPool: ManaPool;
+  poisonCounters: number;
+  experienceCounters: number;
 }
 
 export interface CommanderDamageEntry {
@@ -84,6 +86,9 @@ export const GameLogEntryKind = {
   orderRandomized: "orderRandomized",
   commanderNameSet: "commanderNameSet",
   commanderTaxUpdated: "commanderTaxUpdated",
+  poisonCounterUpdated: "poisonCounterUpdated",
+  experienceCounterUpdated: "experienceCounterUpdated",
+  playerRevived: "playerRevived",
 } as const;
 
 export interface GameLogEntry {

@@ -18,6 +18,9 @@ import {
   updateCommanderTax,
   setCommanderName,
   updateMana,
+  updatePoisonCounters,
+  updateExperienceCounters,
+  revivePlayer,
   type Game,
   type Player,
   type RollKind,
@@ -113,6 +116,9 @@ type ClientMessage =
   | { type: "updateCommanderTax"; playerId: string; delta: number }
   | { type: "setCommanderName"; playerId: string; commanderName: string }
   | { type: "updateMana"; color: ManaColor; delta: number }
+  | { type: "updatePoisonCounters"; playerId: string; delta: number }
+  | { type: "updateExperienceCounters"; playerId: string; delta: number }
+  | { type: "revivePlayer"; playerId: string }
   | { type: "ping" };
 
 function handleMessage(
@@ -190,6 +196,15 @@ function handleMessage(
       break;
     case "updateMana":
       updateMana(game, player, msg.color, msg.delta);
+      break;
+    case "updatePoisonCounters":
+      updatePoisonCounters(game, player, msg.playerId, msg.delta);
+      break;
+    case "updateExperienceCounters":
+      updateExperienceCounters(game, player, msg.playerId, msg.delta);
+      break;
+    case "revivePlayer":
+      revivePlayer(game, player, msg.playerId);
       break;
     case "ping":
       send(ws, { type: "pong" });

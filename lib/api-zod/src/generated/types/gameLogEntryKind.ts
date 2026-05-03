@@ -22,4 +22,7 @@ export const GameLogEntryKind = {
   orderRandomized: "orderRandomized",
   commanderNameSet: "commanderNameSet",
   commanderTaxUpdated: "commanderTaxUpdated",
+  poisonCounterUpdated: "poisonCounterUpdated",
+  experienceCounterUpdated: "experienceCounterUpdated",
+  playerRevived: "playerRevived",
 } as const;

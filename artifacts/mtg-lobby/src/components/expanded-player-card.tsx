@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Skull, Shield, LogOut, FastForward, Crown, Pencil, Check, X } from "lucide-react";
+import { Skull, Shield, LogOut, FastForward, Crown, Pencil, Check, X, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Player, CommanderDamageEntry } from "@workspace/api-client-react";
 import { useCommanderImage } from "../hooks/use-commander-image";
@@ -34,6 +34,9 @@ interface Props {
   onSetCommanderName: (playerId: string, name: string) => void;
   onUpdateCommanderTax: (playerId: string, delta: number) => void;
   onUpdateMana: (color: ManaColor, delta: number) => void;
+  onUpdatePoison: (playerId: string, delta: number) => void;
+  onUpdateExperience: (playerId: string, delta: number) => void;
+  onRevive: (playerId: string) => void;
   onPointerDown?: () => void;
 }
 
@@ -101,6 +104,9 @@ export function ExpandedPlayerCard({
   onSetCommanderName,
   onUpdateCommanderTax,
   onUpdateMana,
+  onUpdatePoison,
+  onUpdateExperience,
+  onRevive,
   onPointerDown,
 }: Props) {
   const [editingName, setEditingName] = useState(false);
@@ -170,12 +176,22 @@ export function ExpandedPlayerCard({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-background/85 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center"
+              className="absolute inset-0 bg-background/85 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center gap-4"
             >
-              <Skull className="w-20 h-20 text-destructive mb-3 drop-shadow-md" />
+              <Skull className="w-20 h-20 text-destructive drop-shadow-md" />
               <span className="text-3xl font-black text-destructive uppercase tracking-[0.3em] drop-shadow-sm">
                 Eliminated
               </span>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={() => onRevive(player.id)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600/90 hover:bg-green-500 text-white text-sm font-bold transition-colors shadow-lg"
+                >
+                  <Heart className="w-4 h-4" />
+                  Revive player
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -312,6 +328,65 @@ export function ExpandedPlayerCard({
             )}
           </div>
         </div>
+
+        {/* Counters row: Poison + Experience */}
+        {gameStatus === "active" && (
+          <div className="w-full flex items-center justify-center gap-3 mb-4 px-1">
+            {/* Poison counters */}
+            <div className="flex items-center gap-1 border border-border rounded-lg px-2 py-1 bg-secondary/50">
+              <span className="text-[10px] uppercase tracking-wider text-green-400 font-semibold">☠ Poison</span>
+              {(isMe || isHost) && (
+                <button
+                  type="button"
+                  onClick={() => onUpdatePoison(player.id, -1)}
+                  disabled={player.poisonCounters === 0}
+                  className="w-5 h-5 rounded bg-secondary hover:bg-secondary/70 text-muted-foreground text-xs font-bold flex items-center justify-center transition-colors disabled:opacity-30"
+                >
+                  -
+                </button>
+              )}
+              <span className={`text-sm font-bold font-mono tabular-nums w-5 text-center ${player.poisonCounters >= 8 ? "text-destructive" : player.poisonCounters >= 5 ? "text-yellow-400" : "text-foreground"}`}>
+                {player.poisonCounters}
+              </span>
+              {(isMe || isHost) && (
+                <button
+                  type="button"
+                  onClick={() => onUpdatePoison(player.id, 1)}
+                  className="w-5 h-5 rounded bg-secondary hover:bg-secondary/70 text-muted-foreground text-xs font-bold flex items-center justify-center transition-colors"
+                >
+                  +
+                </button>
+              )}
+            </div>
+
+            {/* Experience counters */}
+            <div className="flex items-center gap-1 border border-border rounded-lg px-2 py-1 bg-secondary/50">
+              <span className="text-[10px] uppercase tracking-wider text-purple-400 font-semibold">✦ Exp</span>
+              {(isMe || isHost) && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateExperience(player.id, -1)}
+                  disabled={player.experienceCounters === 0}
+                  className="w-5 h-5 rounded bg-secondary hover:bg-secondary/70 text-muted-foreground text-xs font-bold flex items-center justify-center transition-colors disabled:opacity-30"
+                >
+                  -
+                </button>
+              )}
+              <span className="text-sm font-bold font-mono tabular-nums w-6 text-center text-purple-300">
+                {player.experienceCounters}
+              </span>
+              {(isMe || isHost) && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateExperience(player.id, 1)}
+                  className="w-5 h-5 rounded bg-secondary hover:bg-secondary/70 text-muted-foreground text-xs font-bold flex items-center justify-center transition-colors"
+                >
+                  +
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Life controls */}
         <div className="flex-1 flex flex-col items-center justify-center w-full">
