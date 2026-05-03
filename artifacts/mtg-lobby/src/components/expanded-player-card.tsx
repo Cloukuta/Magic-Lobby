@@ -117,6 +117,7 @@ export function ExpandedPlayerCard({
 
   const canEditCommander = isMe || isHost;
   const canEditTax = isMe || isHost;
+  const canEditLife = isMe || isHost;
 
   useEffect(() => {
     if (editingName && nameInputRef.current) {
@@ -155,14 +156,15 @@ export function ExpandedPlayerCard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
-            className="absolute inset-0 pointer-events-none z-0"
-            style={{
-              backgroundImage: `url(${artUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center top",
-              opacity: 0.12,
-            }}
-          />
+            className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+          >
+            <img
+              src={artUrl}
+              alt=""
+              className="w-full h-full object-contain opacity-[0.15]"
+              style={{ objectPosition: "center center" }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -403,13 +405,13 @@ export function ExpandedPlayerCard({
 
           <div className="flex items-center justify-between w-full max-w-[320px]">
             <div className="flex flex-col gap-4">
-              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => onUpdateLife(player.id, -5)}>-5</Button>
-              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => onUpdateLife(player.id, -1)}>-1</Button>
+              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform disabled:opacity-20 disabled:cursor-not-allowed" disabled={!canEditLife} onClick={() => onUpdateLife(player.id, -5)}>-5</Button>
+              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform disabled:opacity-20 disabled:cursor-not-allowed" disabled={!canEditLife} onClick={() => onUpdateLife(player.id, -1)}>-1</Button>
             </div>
             <AnimatedLife life={player.life} />
             <div className="flex flex-col gap-4">
-              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => onUpdateLife(player.id, 5)}>+5</Button>
-              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => onUpdateLife(player.id, 1)}>+1</Button>
+              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform disabled:opacity-20 disabled:cursor-not-allowed" disabled={!canEditLife} onClick={() => onUpdateLife(player.id, 5)}>+5</Button>
+              <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform disabled:opacity-20 disabled:cursor-not-allowed" disabled={!canEditLife} onClick={() => onUpdateLife(player.id, 1)}>+1</Button>
             </div>
           </div>
 
