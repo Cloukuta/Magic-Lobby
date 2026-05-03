@@ -20,4 +20,6 @@ export const GameLogEntryKind = {
   gameReset: "gameReset",
   roll: "roll",
   orderRandomized: "orderRandomized",
+  commanderNameSet: "commanderNameSet",
+  commanderTaxUpdated: "commanderTaxUpdated",
 } as const;

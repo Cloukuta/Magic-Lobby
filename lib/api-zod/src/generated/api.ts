@@ -33,6 +33,9 @@ export const CreateGameBody = zod.object({
     .default(createGameBodyStartingLifeDefault),
 });
 
+export const createGameResponseGamePlayersItemCommanderTaxDefault = 0;
+export const createGameResponseGamePlayersItemCommanderNameDefault = ``;
+
 export const CreateGameResponse = zod.object({
   token: zod.string(),
   playerId: zod.string(),
@@ -54,6 +57,20 @@ export const CreateGameResponse = zod.object({
         isEliminated: zod.boolean(),
         position: zod.number(),
         color: zod.string(),
+        commanderTax: zod
+          .number()
+          .default(createGameResponseGamePlayersItemCommanderTaxDefault),
+        commanderName: zod
+          .string()
+          .default(createGameResponseGamePlayersItemCommanderNameDefault),
+        manaPool: zod.object({
+          W: zod.number(),
+          U: zod.number(),
+          B: zod.number(),
+          R: zod.number(),
+          G: zod.number(),
+          C: zod.number(),
+        }),
       }),
     ),
     commanderDamage: zod.array(
@@ -78,6 +95,8 @@ export const CreateGameResponse = zod.object({
           "gameReset",
           "roll",
           "orderRandomized",
+          "commanderNameSet",
+          "commanderTaxUpdated",
         ]),
         message: zod.string(),
         actorId: zod.string().optional(),
@@ -102,6 +121,9 @@ export const JoinGameBody = zod.object({
   name: zod.string().min(1).max(joinGameBodyNameMax),
 });
 
+export const joinGameResponseGamePlayersItemCommanderTaxDefault = 0;
+export const joinGameResponseGamePlayersItemCommanderNameDefault = ``;
+
 export const JoinGameResponse = zod.object({
   token: zod.string(),
   playerId: zod.string(),
@@ -123,6 +145,20 @@ export const JoinGameResponse = zod.object({
         isEliminated: zod.boolean(),
         position: zod.number(),
         color: zod.string(),
+        commanderTax: zod
+          .number()
+          .default(joinGameResponseGamePlayersItemCommanderTaxDefault),
+        commanderName: zod
+          .string()
+          .default(joinGameResponseGamePlayersItemCommanderNameDefault),
+        manaPool: zod.object({
+          W: zod.number(),
+          U: zod.number(),
+          B: zod.number(),
+          R: zod.number(),
+          G: zod.number(),
+          C: zod.number(),
+        }),
       }),
     ),
     commanderDamage: zod.array(
@@ -147,6 +183,8 @@ export const JoinGameResponse = zod.object({
           "gameReset",
           "roll",
           "orderRandomized",
+          "commanderNameSet",
+          "commanderTaxUpdated",
         ]),
         message: zod.string(),
         actorId: zod.string().optional(),
@@ -164,6 +202,9 @@ export const JoinGameResponse = zod.object({
 export const GetGameParams = zod.object({
   code: zod.coerce.string(),
 });
+
+export const getGameResponsePlayersItemCommanderTaxDefault = 0;
+export const getGameResponsePlayersItemCommanderNameDefault = ``;
 
 export const GetGameResponse = zod.object({
   id: zod.string(),
@@ -183,6 +224,20 @@ export const GetGameResponse = zod.object({
       isEliminated: zod.boolean(),
       position: zod.number(),
       color: zod.string(),
+      commanderTax: zod
+        .number()
+        .default(getGameResponsePlayersItemCommanderTaxDefault),
+      commanderName: zod
+        .string()
+        .default(getGameResponsePlayersItemCommanderNameDefault),
+      manaPool: zod.object({
+        W: zod.number(),
+        U: zod.number(),
+        B: zod.number(),
+        R: zod.number(),
+        G: zod.number(),
+        C: zod.number(),
+      }),
     }),
   ),
   commanderDamage: zod.array(
@@ -207,6 +262,8 @@ export const GetGameResponse = zod.object({
         "gameReset",
         "roll",
         "orderRandomized",
+        "commanderNameSet",
+        "commanderTaxUpdated",
       ]),
       message: zod.string(),
       actorId: zod.string().optional(),

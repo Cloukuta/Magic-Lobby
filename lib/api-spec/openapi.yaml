@@ -158,6 +158,22 @@ components:
         - token
         - playerId
         - game
+    ManaPool:
+      type: object
+      properties:
+        W:
+          type: integer
+        U:
+          type: integer
+        B:
+          type: integer
+        R:
+          type: integer
+        G:
+          type: integer
+        C:
+          type: integer
+      required: [W, U, B, R, G, C]
     Player:
       type: object
       properties:
@@ -177,6 +193,14 @@ components:
           type: integer
         color:
           type: string
+        commanderTax:
+          type: integer
+          default: 0
+        commanderName:
+          type: string
+          default: ""
+        manaPool:
+          $ref: "#/components/schemas/ManaPool"
       required:
         - id
         - name
@@ -186,6 +210,9 @@ components:
         - isEliminated
         - position
         - color
+        - commanderTax
+        - commanderName
+        - manaPool
     CommanderDamageEntry:
       type: object
       properties:
@@ -220,6 +247,8 @@ components:
             - gameReset
             - roll
             - orderRandomized
+            - commanderNameSet
+            - commanderTaxUpdated
         message:
           type: string
         actorId:

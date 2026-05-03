@@ -18,4 +18,5 @@ export * from "./gameStatsTotalDamageDealtItem";
 export * from "./healthStatus";
 export * from "./joinGameBody";
 export * from "./joinResult";
+export * from "./manaPool";
 export * from "./player";

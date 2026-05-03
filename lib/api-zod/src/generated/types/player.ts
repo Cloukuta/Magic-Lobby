@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ManaPool } from "./manaPool";
 
 export interface Player {
   id: string;
@@ -15,4 +16,7 @@ export interface Player {
   isEliminated: boolean;
   position: number;
   color: string;
+  commanderTax: number;
+  commanderName: string;
+  manaPool: ManaPool;
 }

@@ -39,6 +39,15 @@ export const GameStateStatus = {
   ended: "ended",
 } as const;
 
+export interface ManaPool {
+  W: number;
+  U: number;
+  B: number;
+  R: number;
+  G: number;
+  C: number;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -48,6 +57,9 @@ export interface Player {
   isEliminated: boolean;
   position: number;
   color: string;
+  commanderTax: number;
+  commanderName: string;
+  manaPool: ManaPool;
 }
 
 export interface CommanderDamageEntry {
@@ -70,6 +82,8 @@ export const GameLogEntryKind = {
   gameReset: "gameReset",
   roll: "roll",
   orderRandomized: "orderRandomized",
+  commanderNameSet: "commanderNameSet",
+  commanderTaxUpdated: "commanderTaxUpdated",
 } as const;
 
 export interface GameLogEntry {

@@ -2,6 +2,15 @@ import { customAlphabet } from "nanoid";
 
 export type GameStatus = "waiting" | "active" | "ended";
 
+export type ManaPool = {
+  W: number;
+  U: number;
+  B: number;
+  R: number;
+  G: number;
+  C: number;
+};
+
 export type Player = {
   id: string;
   name: string;
@@ -11,6 +20,9 @@ export type Player = {
   isEliminated: boolean;
   position: number;
   color: string;
+  commanderTax: number;
+  commanderName: string;
+  manaPool: ManaPool;
 };
 
 export type CommanderDamageEntry = {
@@ -29,7 +41,9 @@ export type GameLogKind =
   | "gameStarted"
   | "gameReset"
   | "roll"
-  | "orderRandomized";
+  | "orderRandomized"
+  | "commanderNameSet"
+  | "commanderTaxUpdated";
 
 export type GameLogEntry = {
   id: string;
@@ -138,6 +152,9 @@ export function createGame(input: {
     isEliminated: false,
     position: 0,
     color: PLAYER_COLORS[0]!,
+    commanderTax: 0,
+    commanderName: "",
+    manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
   };
   const token = generateToken();
   const game: Game = {
@@ -183,6 +200,9 @@ export function joinGame(
     isEliminated: false,
     position: nextPosition(game),
     color: nextColor(game),
+    commanderTax: 0,
+    commanderName: "",
+    manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
   };
   game.players.push(player);
   appendLog(game, {
@@ -370,6 +390,9 @@ export function nextTurn(game: Game, actor: Player): void {
   if (game.status !== "active") return;
   // Host can always advance; otherwise only the current turn player may pass their own turn.
   if (!actor.isHost && actor.id !== game.currentTurnPlayerId) return;
+  // Clear outgoing player's mana pool
+  const outgoing = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  if (outgoing) clearMana(outgoing);
   const order = [...game.players].sort((a, b) => a.position - b.position);
   const aliveOrder = order.filter((p) => !p.isEliminated);
   if (aliveOrder.length === 0) return;
@@ -393,6 +416,9 @@ export function setTurn(game: Game, actor: Player, playerId: string): void {
   if (game.status !== "active") return;
   const target = game.players.find((p) => p.id === playerId);
   if (!target || target.isEliminated) return;
+  // Clear outgoing player's mana
+  const outgoing = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  if (outgoing) clearMana(outgoing);
   game.currentTurnPlayerId = target.id;
   appendLog(game, {
     kind: "turnAdvanced",
@@ -407,6 +433,8 @@ export function resetGame(game: Game, actor: Player): void {
   for (const p of game.players) {
     p.life = game.startingLife;
     p.isEliminated = false;
+    p.commanderTax = 0;
+    p.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
   }
   game.commanderDamage = [];
   game.status = "waiting";
@@ -504,6 +532,68 @@ export function rollDice(
     actorId: actor.id,
     amount,
   });
+}
+
+function clearMana(player: Player): void {
+  player.manaPool = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+}
+
+export type ManaColor = keyof ManaPool;
+
+export function updateCommanderTax(
+  game: Game,
+  actor: Player,
+  targetId: string,
+  delta: number,
+): void {
+  const target = game.players.find((p) => p.id === targetId);
+  if (!target) return;
+  if (!actor.isHost && actor.id !== target.id) return;
+  const next = Math.max(0, target.commanderTax + delta);
+  target.commanderTax = next;
+  appendLog(game, {
+    kind: "commanderTaxUpdated",
+    message: `${target.name}'s commander tax is now ${next}`,
+    actorId: actor.id,
+    targetId: target.id,
+    amount: next,
+  });
+}
+
+export function setCommanderName(
+  game: Game,
+  actor: Player,
+  targetId: string,
+  commanderName: string,
+): void {
+  const target = game.players.find((p) => p.id === targetId);
+  if (!target) return;
+  if (!actor.isHost && actor.id !== target.id) return;
+  const trimmed = commanderName.trim().slice(0, 64);
+  target.commanderName = trimmed;
+  if (trimmed) {
+    appendLog(game, {
+      kind: "commanderNameSet",
+      message: `${target.name}'s commander is ${trimmed}`,
+      actorId: actor.id,
+      targetId: target.id,
+    });
+  }
+}
+
+export function updateMana(
+  game: Game,
+  actor: Player,
+  color: ManaColor,
+  delta: number,
+): void {
+  if (game.status !== "active") return;
+  if (actor.id !== game.currentTurnPlayerId && !actor.isHost) return;
+  const target = game.players.find((p) => p.id === game.currentTurnPlayerId);
+  if (!target) return;
+  const COLORS: ManaColor[] = ["W", "U", "B", "R", "G", "C"];
+  if (!COLORS.includes(color)) return;
+  target.manaPool[color] = Math.max(0, target.manaPool[color] + delta);
 }
 
 export function setConnected(player: Player, connected: boolean): void {

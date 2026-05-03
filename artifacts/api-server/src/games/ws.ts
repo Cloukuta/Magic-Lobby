@@ -15,9 +15,13 @@ import {
   setStartingLife,
   rollDice,
   randomizeOrder,
+  updateCommanderTax,
+  setCommanderName,
+  updateMana,
   type Game,
   type Player,
   type RollKind,
+  type ManaColor,
 } from "./store";
 
 type GameSocket = WebSocket & {
@@ -106,6 +110,9 @@ type ClientMessage =
   | { type: "setStartingLife"; value: number }
   | { type: "roll"; kind: RollKind }
   | { type: "randomizeOrder" }
+  | { type: "updateCommanderTax"; playerId: string; delta: number }
+  | { type: "setCommanderName"; playerId: string; commanderName: string }
+  | { type: "updateMana"; color: ManaColor; delta: number }
   | { type: "ping" };
 
 function handleMessage(
@@ -174,6 +181,15 @@ function handleMessage(
       break;
     case "randomizeOrder":
       randomizeOrder(game, player);
+      break;
+    case "updateCommanderTax":
+      updateCommanderTax(game, player, msg.playerId, msg.delta);
+      break;
+    case "setCommanderName":
+      setCommanderName(game, player, msg.playerId, msg.commanderName);
+      break;
+    case "updateMana":
+      updateMana(game, player, msg.color, msg.delta);
       break;
     case "ping":
       send(ws, { type: "pong" });

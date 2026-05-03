@@ -50,7 +50,10 @@ type ClientAction =
   | { type: "kickPlayer"; playerId: string }
   | { type: "setStartingLife"; value: number }
   | { type: "roll"; kind: "coin" | "d6" | "d20" }
-  | { type: "randomizeOrder" };
+  | { type: "randomizeOrder" }
+  | { type: "updateCommanderTax"; playerId: string; delta: number }
+  | { type: "setCommanderName"; playerId: string; commanderName: string }
+  | { type: "updateMana"; color: "W" | "U" | "B" | "R" | "G" | "C"; delta: number };
 
 export function useGameSocket(token: string | undefined, initialGame?: GameState) {
   const [game, setGame] = useState<GameState | undefined>(initialGame);

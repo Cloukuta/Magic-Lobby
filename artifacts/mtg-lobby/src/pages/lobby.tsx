@@ -13,52 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-
-function AnimatedLife({ life }: { life: number }) {
-  const [prevLife, setPrevLife] = useState(life);
-  const [delta, setDelta] = useState(0);
-
-  useEffect(() => {
-    if (life !== prevLife) {
-      setDelta(life - prevLife);
-      setPrevLife(life);
-
-      const timer = setTimeout(() => setDelta(0), 1000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [life, prevLife]);
-
-  return (
-    <div className="relative w-32 flex justify-center items-center h-24">
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          key={life}
-          initial={{ opacity: 0, y: delta > 0 ? 20 : -20, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: delta > 0 ? -20 : 20, scale: 0.8 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="absolute text-8xl font-serif font-black tabular-nums tracking-tighter"
-        >
-          {life}
-        </motion.div>
-      </AnimatePresence>
-      <AnimatePresence>
-        {delta !== 0 && (
-          <motion.div
-            initial={{ opacity: 1, y: 0, x: 40 }}
-            animate={{ opacity: 0, y: delta > 0 ? -40 : 40, x: 40 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-            className={`absolute text-2xl font-bold ${delta > 0 ? 'text-green-500' : 'text-destructive'}`}
-          >
-            {delta > 0 ? '+' : ''}{delta}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+import { ExpandedPlayerCard } from "../components/expanded-player-card";
 
 export default function Lobby() {
   const [match, params] = useRoute("/lobby/:code");
@@ -127,7 +82,7 @@ export default function Lobby() {
       setLastEvent((current) =>
         current?.id === latest.id ? null : current,
       );
-    }, 3500);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [game?.log, lastEvent?.id]);
 
@@ -448,135 +403,31 @@ export default function Lobby() {
           const renderExpandedCard = (player: Player, isMe: boolean) => {
             const isTurn = activeGame.currentTurnPlayerId === player.id;
             return (
-              <motion.div
-                layout
+              <ExpandedPlayerCard
                 key={player.id}
+                player={player}
+                isMe={isMe}
+                isTurn={isTurn}
+                isHost={isHost}
+                gameStatus={activeGame.status}
+                players={activeGame.players}
+                commanderDamage={activeGame.commanderDamage}
+                myPlayerId={session.playerId}
+                onUpdateLife={(pid, delta) => sendAction({ type: "updateLife", playerId: pid, delta })}
+                onNextTurn={() => sendAction({ type: "nextTurn" })}
+                onKick={(pid) => sendAction({ type: "kickPlayer", playerId: pid })}
+                onExpand={handleExpand}
+                onOpenDamageDialog={openDamageDialog}
+                onSetDamageFromBadge={(p, dealerId, amount) => {
+                  setSelectedPlayerForDamage(p);
+                  setDamageDealerId(dealerId);
+                  setDamageAmount(amount);
+                }}
+                onSetCommanderName={(pid, name) => sendAction({ type: "setCommanderName", playerId: pid, commanderName: name })}
+                onUpdateCommanderTax={(pid, delta) => sendAction({ type: "updateCommanderTax", playerId: pid, delta })}
+                onUpdateMana={(color, delta) => sendAction({ type: "updateMana", color, delta })}
                 onPointerDown={!isMe ? resetInactivity : undefined}
-                className={`relative flex flex-col rounded-xl overflow-hidden border-2 transition-colors duration-500 bg-card ${isTurn ? 'border-primary shadow-[0_0_30px_rgba(var(--primary),0.3)] z-10' : 'border-card-border'}`}
-                style={{ '--player-color': player.color } as any}
-                animate={isTurn ? { scale: 1.01 } : { scale: 1 }}
-              >
-                <div className="h-3 w-full" style={{ backgroundColor: player.color }} />
-
-                <div className="p-6 flex-1 flex flex-col items-center relative">
-                  <AnimatePresence>
-                    {player.isEliminated && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-background/85 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center"
-                      >
-                        <Skull className="w-20 h-20 text-destructive mb-3 drop-shadow-md" />
-                        <span className="text-3xl font-black text-destructive uppercase tracking-[0.3em] drop-shadow-sm">Eliminated</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="flex items-center justify-between w-full mb-6">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {!isMe ? (
-                        <button
-                          type="button"
-                          onClick={() => handleExpand(player.id)}
-                          className="font-bold text-2xl tracking-tight hover:opacity-80 transition-opacity truncate"
-                          style={{ color: isTurn ? player.color : 'inherit' }}
-                          title="Tap to collapse"
-                        >
-                          {player.name}
-                        </button>
-                      ) : (
-                        <span className="font-bold text-2xl tracking-tight truncate" style={{ color: isTurn ? player.color : 'inherit' }}>{player.name}</span>
-                      )}
-                      {isMe && <span className="text-xs font-bold uppercase px-2 py-0.5 bg-primary/20 text-primary rounded border border-primary/30">You</span>}
-                      {player.isHost && <span className="text-xs uppercase px-2 py-0.5 bg-secondary text-muted-foreground rounded border border-border">Host</span>}
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {isHost && !isMe && !player.isEliminated && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => sendAction({ type: "kickPlayer", playerId: player.id })}>
-                          <LogOut className="w-3 h-3" />
-                        </Button>
-                      )}
-                      <div className={`w-3 h-3 rounded-full shadow-sm ${player.isConnected ? 'bg-green-500 shadow-green-500/50' : 'bg-destructive shadow-destructive/50'}`} title={player.isConnected ? 'Connected' : 'Disconnected'} />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col items-center justify-center w-full">
-                    {isMe && isTurn && activeGame.status === "active" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mb-5 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
-                        onClick={() => sendAction({ type: "nextTurn" })}
-                      >
-                        <FastForward className="w-4 h-4 mr-2" /> Pass My Turn
-                      </Button>
-                    )}
-
-                    <div className="flex items-center justify-between w-full max-w-[320px]">
-                      <div className="flex flex-col gap-4">
-                        <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: -5 })}>-5</Button>
-                        <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: -1 })}>-1</Button>
-                      </div>
-
-                      <AnimatedLife life={player.life} />
-
-                      <div className="flex flex-col gap-4">
-                        <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: 5 })}>+5</Button>
-                        <Button variant="outline" size="icon" className="w-16 h-16 rounded-2xl bg-secondary border-secondary-foreground/10 text-2xl font-bold hover:bg-secondary/80 active:scale-95 transition-transform" onClick={() => sendAction({ type: "updateLife", playerId: player.id, delta: 1 })}>+1</Button>
-                      </div>
-                    </div>
-
-                    {!isMe && (
-                      <Button variant="ghost" className="mt-6 text-muted-foreground hover:text-foreground" onClick={() => openDamageDialog(player)}>
-                        <Shield className="w-4 h-4 mr-2" /> Deal Cmdr Damage
-                      </Button>
-                    )}
-
-                    {activeGame.players.length > 1 && (
-                      <div className="mt-6 w-full">
-                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 text-center font-semibold">
-                          Cmdr Damage Received
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-1.5">
-                          {activeGame.players
-                            .filter(opp => opp.id !== player.id)
-                            .map(opp => {
-                              const dmg = activeGame.commanderDamage.find(
-                                cd => cd.toPlayerId === player.id && cd.fromPlayerId === opp.id,
-                              )?.amount || 0;
-                              const lethal = dmg >= 21;
-                              return (
-                                <button
-                                  key={opp.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedPlayerForDamage(player);
-                                    setDamageDealerId(opp.id);
-                                    setDamageAmount(dmg);
-                                  }}
-                                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-mono tabular-nums transition-colors ${
-                                    lethal
-                                      ? 'bg-destructive/20 border-destructive text-destructive font-bold'
-                                      : dmg > 0
-                                        ? 'bg-secondary border-border hover:border-foreground/40'
-                                        : 'bg-secondary/40 border-border/40 text-muted-foreground hover:border-foreground/30'
-                                  }`}
-                                  title={`Damage from ${opp.name}`}
-                                >
-                                  <span
-                                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                                    style={{ backgroundColor: opp.color }}
-                                  />
-                                  <span>{dmg}/21</span>
-                                </button>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+              />
             );
           };
 
