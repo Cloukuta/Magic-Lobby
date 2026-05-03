@@ -64,6 +64,7 @@ function AnimatedLife({ life }: { life: number }) {
           exit={{ opacity: 0, y: delta > 0 ? -20 : 20, scale: 0.8 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="absolute text-8xl font-serif font-black tabular-nums tracking-tighter"
+          style={{ textShadow: "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 3px 6px rgba(0,0,0,0.8)" }}
         >
           {life}
         </motion.div>
@@ -161,7 +162,7 @@ export function ExpandedPlayerCard({
             <img
               src={artUrl}
               alt=""
-              className="w-full h-full object-contain opacity-[0.15]"
+              className="w-full h-full object-contain opacity-[0.32]"
               style={{ objectPosition: "center center" }}
             />
           </motion.div>

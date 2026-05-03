@@ -36,6 +36,7 @@ export default function Lobby() {
   const [damageAmount, setDamageAmount] = useState<number>(0);
   const [damageDealerId, setDamageDealerId] = useState<string>("");
   const [lastEvent, setLastEvent] = useState<{ id: string; message: string; kind: "roll" | "orderRandomized" } | null>(null);
+  const dismissedEventIdRef = useRef<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,6 +74,7 @@ export default function Lobby() {
     );
     if (!latest) return;
     if (lastEvent?.id === latest.id) return;
+    if (dismissedEventIdRef.current === latest.id) return;
     setLastEvent({
       id: latest.id,
       message: latest.message,
@@ -381,7 +383,10 @@ export default function Lobby() {
             <span className="text-sm md:text-base flex-1">{lastEvent.message}</span>
             <button
               type="button"
-              onClick={() => setLastEvent(null)}
+              onClick={() => {
+                dismissedEventIdRef.current = lastEvent?.id ?? null;
+                setLastEvent(null);
+              }}
               className="shrink-0 ml-1 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Cerrar"
             >
